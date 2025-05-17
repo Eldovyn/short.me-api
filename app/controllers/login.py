@@ -1,9 +1,10 @@
-from ..databases import UserDatabase
+from ..databases import UserDatabase, AccountActiveDatabase
 from flask import jsonify
 from email_validator import validate_email
 from google.auth.transport import requests
 import requests
-from ..utils import AuthJwt
+from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
+import datetime
 
 
 class LoginController:
@@ -96,6 +97,39 @@ class LoginController:
                         401,
                     )
                 token = await AuthJwt.generate_jwt(email, int(timestamp.timestamp()))
+                if not user_data.is_active:
+                    expired_at = timestamp + datetime.timedelta(minutes=5)
+                    token_web = await TokenWebAccountActive.insert(
+                        f"{user_data.id}", int(timestamp.timestamp())
+                    )
+                    token_email = await TokenEmailAccountActive.insert(
+                        email, int(timestamp.timestamp())
+                    )
+                    await AccountActiveDatabase.insert(
+                        email,
+                        token_web,
+                        token_email,
+                        int(timestamp.timestamp()),
+                        int(expired_at.timestamp()),
+                    )
+                    SendEmail.send_email_verification(user_data, token_email)
+                    return (
+                        jsonify(
+                            {
+                                "message": "user not active",
+                                "data": {
+                                    "id": user_data.id,
+                                    "username": user_data.username,
+                                    "created_at": user_data.created_at,
+                                    "updated_at": user_data.updated_at,
+                                    "is_active": user_data.is_active,
+                                    "provider": user_data.provider,
+                                },
+                                "token": {"access_token": token, "token_web": None},
+                            }
+                        ),
+                        401,
+                    )
             return (
                 jsonify(
                     {

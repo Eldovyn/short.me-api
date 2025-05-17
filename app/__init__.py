@@ -95,9 +95,11 @@ def create_app():
     with app.app_context():
         from .api.register import register_router
         from .api.login import login_router
+        from .api.account_active import account_active_router
 
         app.register_blueprint(login_router)
         app.register_blueprint(register_router)
+        app.register_blueprint(account_active_router)
 
     @app.get("/login/google")
     def login_google():

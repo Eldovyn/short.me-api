@@ -1,10 +1,11 @@
-from ..databases import UserDatabase
+from ..databases import UserDatabase, AccountActiveDatabase
 from flask import jsonify
 from email_validator import validate_email
 from google.auth.transport import requests
 import requests
 import re
-from ..utils import AuthJwt
+from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
+import datetime, traceback
 
 
 class RegisterController:
@@ -100,6 +101,21 @@ class RegisterController:
                 result = await UserDatabase.insert(
                     provider, username, email, result_password, created_at
                 )
+                expired_at = timestamp + datetime.timedelta(minutes=5)
+                token_web = await TokenWebAccountActive.insert(
+                    f"{result.id}", int(timestamp.timestamp())
+                )
+                token_email = await TokenEmailAccountActive.insert(
+                    email, int(timestamp.timestamp())
+                )
+                await AccountActiveDatabase.insert(
+                    email,
+                    token_web,
+                    token_email,
+                    int(timestamp.timestamp()),
+                    int(expired_at.timestamp()),
+                )
+                SendEmail.send_email_verification(result, token_email)
             return (
                 jsonify(
                     {
@@ -121,4 +137,5 @@ class RegisterController:
                 201,
             )
         except Exception as e:
+            traceback.print_exc()
             return jsonify({"message": "invalid request"}), 400
