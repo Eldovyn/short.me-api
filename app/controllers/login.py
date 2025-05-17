@@ -124,11 +124,15 @@ class LoginController:
                                     "updated_at": user_data.updated_at,
                                     "is_active": user_data.is_active,
                                     "provider": user_data.provider,
+                                    "email": user_data.email,
                                 },
-                                "token": {"access_token": token, "token_web": None},
+                                "token": {
+                                    "access_token": token,
+                                    "token_web": token_web,
+                                },
                             }
                         ),
-                        401,
+                        403,
                     )
             return (
                 jsonify(

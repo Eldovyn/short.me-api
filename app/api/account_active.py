@@ -22,11 +22,21 @@ async def user_account_active_information():
     )
 
 
-@account_active_router.get("/short.me/account-active/verification/email-verification")
+@account_active_router.patch("/short.me/account-active/verification/email-verification")
 async def user_account_active_verification():
+    json = request.json
+    timestamp = request.timestamp
+    token = json.get("token", "")
+    return await AccountActiveController.user_account_active_verification(
+        token, timestamp
+    )
+
+
+@account_active_router.get("/short.me/account-active/verification/email-verification")
+async def get_user_account_active_verification():
     data = request.args
     timestamp = request.timestamp
     token = data.get("token", "")
-    return await AccountActiveController.user_account_active_verification(
+    return await AccountActiveController.get_user_account_active_verification(
         token, timestamp
     )

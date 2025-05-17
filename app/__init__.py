@@ -101,56 +101,6 @@ def create_app():
         app.register_blueprint(register_router)
         app.register_blueprint(account_active_router)
 
-    @app.get("/login/google")
-    def login_google():
-        token = request.args.get("token")
-        try:
-            # Specify the WEB_CLIENT_ID of the app that accesses the backend:
-            idinfo = id_token.verify_oauth2_token(
-                token,
-                requests.Request(),
-                "113118193592-loc110rrqru2gmg3ahr94771n1c7hp8j.apps.googleusercontent.com",
-            )
-
-            # Or, if multiple clients access the backend server:
-            # idinfo = id_token.verify_oauth2_token(token, requests.Request())
-            # if idinfo['aud'] not in [WEB_CLIENT_ID_1, WEB_CLIENT_ID_2, WEB_CLIENT_ID_3]:
-            #     raise ValueError('Could not verify audience.')
-
-            # If the request specified a Google Workspace domain
-            # if idinfo['hd'] != DOMAIN_NAME:
-            #     raise ValueError('Wrong domain name.')
-
-            # ID token is valid. Get the user's Google Account ID from the decoded token.
-            userid = idinfo["sub"]  # Google user ID
-            email = idinfo.get("email")
-            name = idinfo.get("name")
-            picture = idinfo.get("picture")
-
-            print("User ID:", userid)
-            print("Email:", email)
-            print("Name:", name)
-            print("Picture:", picture)
-
-            return jsonify(
-                {"userid": userid, "email": email, "name": name, "picture": picture}
-            )
-        except Exception as e:
-            print(e)
-            return "ValueError"
-
-    @app.route("/authorize/google")
-    def authorize_google():
-        try:
-            token = google.authorize_access_token()
-            userinfo_endpoint = google.server_metadata["userinfo_endpoint"]
-            resp = google.get(userinfo_endpoint)
-            user_info = resp.json()
-            print(token)
-            return "user_info"
-        except authlib.integrations.base_client.errors.MismatchingStateError:
-            return "MismatchingStateError"
-
     @app.after_request
     async def add_cors_headers(response):
         response.headers["Access-Control-Allow-Origin"] = "*"

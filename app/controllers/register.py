@@ -130,7 +130,7 @@ class RegisterController:
                         },
                         "token": {
                             "access_token": token,
-                            "token": {"access_token": token, "token_web": None},
+                            "token_web": token_web,
                         },
                     }
                 ),

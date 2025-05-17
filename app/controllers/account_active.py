@@ -7,8 +7,62 @@ import datetime
 
 class AccountActiveController:
     @staticmethod
+    async def get_user_account_active_verification(token, timestamp):
+        errors = {}
+        if not isinstance(token, str):
+            errors.setdefault("token", []).append("FIELD_TEXT")
+        if not token or (isinstance(token, str) and token.isspace()):
+            errors.setdefault("token", []).append("FIELD_REQUIRED")
+        if errors:
+            return jsonify({"errors": errors, "message": "invalid data"}), 400
+        if not (
+            user_data := await AccountActiveDatabase.get("by_token_email", token=token)
+        ):
+            return (
+                jsonify(
+                    {
+                        "errors": {"token": ["FIELD_INVALID"]},
+                        "message": "user not found",
+                    }
+                ),
+                404,
+            )
+        if user_data.expired_at <= timestamp.timestamp():
+            await AccountActiveDatabase.delete("by_token_email", token=token)
+            return (
+                jsonify(
+                    {"errors": {"token": ["NOT_FOUND"]}, "message": "token not found"}
+                ),
+                404,
+            )
+        return (
+            jsonify(
+                {
+                    "message": "successfully get account active information",
+                    "data": {
+                        "id": user_data.id,
+                        "token_web": user_data.token_web,
+                        "created_at": user_data.created_at,
+                        "updated_at": user_data.updated_at,
+                        "expired_at": user_data.expired_at,
+                    },
+                    "user": {
+                        "id": user_data.user.id,
+                        "username": user_data.user.username,
+                        "created_at": user_data.user.created_at,
+                        "updated_at": user_data.user.updated_at,
+                        "is_active": user_data.user.is_active,
+                        "provider": user_data.user.provider,
+                    },
+                }
+            ),
+            200,
+        )
+
+    @staticmethod
     async def user_account_active_verification(token, timestamp):
         errors = {}
+        print(token)
         if not isinstance(token, str):
             errors.setdefault("token", []).append("FIELD_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
@@ -45,7 +99,7 @@ class AccountActiveController:
         return (
             jsonify(
                 {
-                    "message": "successfully get account active information",
+                    "message": "successfully verify user account",
                     "data": {
                         "id": user_data.id,
                         "token_web": user_data.token_web,
@@ -60,6 +114,7 @@ class AccountActiveController:
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
                         "provider": user_data.user.provider,
+                        "email": user_data.user.email,
                     },
                 }
             ),
@@ -108,6 +163,7 @@ class AccountActiveController:
                     },
                     "user": {
                         "id": user_data.user.id,
+                        "email": user_data.user.email,
                         "username": user_data.user.username,
                         "created_at": user_data.user.created_at,
                         "updated_at": user_data.user.updated_at,
