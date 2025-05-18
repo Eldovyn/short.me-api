@@ -6,7 +6,7 @@ import requests
 import re
 from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime, traceback
-from ..config import provider
+from ..config import provider as PROVIDER
 
 
 class RegisterController:
@@ -23,7 +23,7 @@ class RegisterController:
                 errors.setdefault("provider", []).append("FIELD_TEXT")
             if not provider or (isinstance(provider, str) and provider.isspace()):
                 errors.setdefault("provider", []).append("FIELD_REQUIRED")
-            if provider not in provider.split(", "):
+            if provider not in PROVIDER.split(", "):
                 errors.setdefault("provider", []).append("FIELD_INVALID")
             if provider == "google":
                 if not isinstance(token, str):
