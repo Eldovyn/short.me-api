@@ -5,6 +5,7 @@ from google.auth.transport import requests
 import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
+from ..config import provider as PROVIDER
 
 
 class LoginController:
@@ -18,6 +19,8 @@ class LoginController:
                 errors.setdefault("provider", []).append("FIELD_TEXT")
             if not provider or (isinstance(provider, str) and provider.isspace()):
                 errors.setdefault("provider", []).append("FIELD_REQUIRED")
+            if provider not in PROVIDER.split(", "):
+                errors.setdefault("provider", []).append("FIELD_INVALID")
 
             if provider == "google":
                 if not errors:
