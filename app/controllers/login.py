@@ -6,12 +6,16 @@ import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
 from ..config import provider as PROVIDER
+import traceback
 
 
 class LoginController:
     @staticmethod
     async def user_login(provider, token, email, password, timestamp):
         from ..bcrypt import bcrypt
+
+        token_web = None
+        access_token = None
 
         try:
             errors = {}
@@ -60,8 +64,8 @@ class LoginController:
                             ),
                             401,
                         )
-                    token = await AuthJwt.generate_jwt(
-                        email, int(timestamp.timestamp())
+                    access_token = await AuthJwt.generate_jwt(
+                        f"{user_data.id}", int(timestamp.timestamp())
                     )
             else:
                 if not isinstance(email, str):
@@ -99,14 +103,13 @@ class LoginController:
                         ),
                         401,
                     )
-                token = await AuthJwt.generate_jwt(email, int(timestamp.timestamp()))
                 if not user_data.is_active:
                     expired_at = timestamp + datetime.timedelta(minutes=5)
                     token_web = await TokenWebAccountActive.insert(
                         f"{user_data.id}", int(timestamp.timestamp())
                     )
                     token_email = await TokenEmailAccountActive.insert(
-                        email, int(timestamp.timestamp())
+                        f"{user_data.id}", int(timestamp.timestamp())
                     )
                     await AccountActiveDatabase.insert(
                         email,
@@ -130,13 +133,16 @@ class LoginController:
                                     "email": user_data.email,
                                 },
                                 "token": {
-                                    "access_token": token,
+                                    "access_token": None,
                                     "token_web": token_web,
                                 },
                             }
                         ),
                         403,
                     )
+                access_token = await AuthJwt.generate_jwt(
+                    f"{user_data.id}", int(timestamp.timestamp())
+                )
             return (
                 jsonify(
                     {
@@ -149,7 +155,7 @@ class LoginController:
                             "is_active": user_data.is_active,
                             "provider": user_data.provider,
                         },
-                        "token": {"access_token": token, "token_web": None},
+                        "token": {"access_token": access_token, "token_web": token_web},
                     }
                 ),
                 201,

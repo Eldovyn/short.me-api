@@ -4,7 +4,7 @@ from email_validator import validate_email
 from google.auth.transport import requests
 import requests
 import re
-from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail
+from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail, AuthJwt
 import datetime, traceback
 from ..config import provider as PROVIDER
 
@@ -15,6 +15,9 @@ class RegisterController:
         provider, token, username, email, password, confirm_password, timestamp
     ):
         from ..bcrypt import bcrypt
+
+        access_token = None
+        token_web = None
 
         try:
             created_at = int(timestamp.timestamp())
@@ -49,6 +52,7 @@ class RegisterController:
                     result = await UserDatabase.insert(
                         provider, username, email, None, created_at
                     )
+                    access_token = await AuthJwt.generate_jwt(result.id, created_at)
             else:
                 if not isinstance(username, str):
                     errors.setdefault("username", []).append("FIELD_TEXT")
@@ -137,13 +141,12 @@ class RegisterController:
                             "provider": result.provider,
                         },
                         "token": {
-                            "access_token": None,
+                            "access_token": access_token,
                             "token_web": token_web,
                         },
                     }
                 ),
                 201,
             )
-        except Exception as e:
-            traceback.print_exc()
+        except Exception:
             return jsonify({"message": "invalid request"}), 400
