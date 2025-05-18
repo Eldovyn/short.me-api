@@ -4,8 +4,9 @@ from email_validator import validate_email
 from google.auth.transport import requests
 import requests
 import re
-from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
+from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime, traceback
+from ..config import provider
 
 
 class RegisterController:
@@ -22,8 +23,13 @@ class RegisterController:
                 errors.setdefault("provider", []).append("FIELD_TEXT")
             if not provider or (isinstance(provider, str) and provider.isspace()):
                 errors.setdefault("provider", []).append("FIELD_REQUIRED")
-
+            if provider not in provider.split(", "):
+                errors.setdefault("provider", []).append("FIELD_INVALID")
             if provider == "google":
+                if not isinstance(token, str):
+                    errors.setdefault("token", []).append("FIELD_TEXT")
+                if not token or (isinstance(token, str) and token.isspace()):
+                    errors.setdefault("token", []).append("FIELD_REQUIRED")
                 if not errors:
                     url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
                     response = requests.get(url)
@@ -42,9 +48,6 @@ class RegisterController:
                         )
                     result = await UserDatabase.insert(
                         provider, username, email, None, created_at
-                    )
-                    token = await AuthJwt.generate_jwt(
-                        email, int(timestamp.timestamp())
                     )
             else:
                 if not isinstance(username, str):
@@ -72,16 +75,21 @@ class RegisterController:
                     errors.setdefault("email", []).append("FIELD_INVALID")
                 if password != confirm_password:
                     errors.setdefault("password_match", []).append("PASSWORD_MISMATCH")
-                if len(password) < 8:
-                    errors.setdefault("password_security", []).append("TOO_SHORT")
-                if not re.search(r"[A-Z]", password):
-                    errors.setdefault("password_security", []).append("NO_CAPITAL")
-                if not re.search(r"[a-z]", password):
-                    errors.setdefault("password_security", []).append("NO_LOWERCASE")
-                if not re.search(r"[0-9]", password):
-                    errors.setdefault("password_security", []).append("NO_NUMBER")
-                if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", password):
-                    errors.setdefault("password_security", []).append("NO_SYMBOL")
+                else:
+                    if len(password) < 8:
+                        errors.setdefault("password_security", []).append("TOO_SHORT")
+                    if not re.search(r"[A-Z]", password):
+                        errors.setdefault("password_security", []).append("NO_CAPITAL")
+                    if not re.search(r"[a-z]", password):
+                        errors.setdefault("password_security", []).append(
+                            "NO_LOWERCASE"
+                        )
+                    if not re.search(r"[0-9]", password):
+                        errors.setdefault("password_security", []).append("NO_NUMBER")
+                    if not re.search(
+                        r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", password
+                    ):
+                        errors.setdefault("password_security", []).append("NO_SYMBOL")
                 if errors:
                     return jsonify({"errors": errors, "message": "invalid data"}), 400
                 result_password = bcrypt.generate_password_hash(password).decode(
@@ -129,7 +137,7 @@ class RegisterController:
                             "provider": result.provider,
                         },
                         "token": {
-                            "access_token": token,
+                            "access_token": None,
                             "token_web": token_web,
                         },
                     }
