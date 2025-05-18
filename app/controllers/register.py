@@ -114,7 +114,7 @@ class RegisterController:
                     f"{result.id}", int(timestamp.timestamp())
                 )
                 token_email = await TokenEmailAccountActive.insert(
-                    email, int(timestamp.timestamp())
+                    f"{result.id}", int(timestamp.timestamp())
                 )
                 await AccountActiveDatabase.insert(
                     email,

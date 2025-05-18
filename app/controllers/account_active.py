@@ -44,6 +44,7 @@ class AccountActiveController:
                     "user": {
                         "id": user_data.user.id,
                         "username": user_data.user.username,
+                        "email": user_data.user.email,
                         "created_at": user_data.user.created_at,
                         "updated_at": user_data.user.updated_at,
                         "is_active": user_data.user.is_active,
@@ -64,6 +65,7 @@ class AccountActiveController:
             errors.setdefault("token", []).append("FIELD_REQUIRED")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
+        token_web = await TokenEmailAccountActive.get(token)
         if not (
             user_data := await AccountActiveDatabase.get(
                 "by_token_email", token=token, created_at=created_at
@@ -78,7 +80,6 @@ class AccountActiveController:
                 ),
                 404,
             )
-        token_web = await TokenEmailAccountActive.get(token)
         await AccountActiveDatabase.delete(
             "user_active_by_token_email",
             token=user_data.token_email,

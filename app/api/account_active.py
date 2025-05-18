@@ -20,7 +20,7 @@ async def user_account_active_information(token):
     )
 
 
-@account_active_router.get("/short.me/account-active/verify/<string:token>")
+@account_active_router.get("/short.me/auth/account-active/verify/<string:token>")
 async def get_user_account_active_verification(token):
     timestamp = request.timestamp
     return await AccountActiveController.get_user_account_active_verification(
