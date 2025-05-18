@@ -8,6 +8,7 @@ import datetime
 class AccountActiveController:
     @staticmethod
     async def get_user_account_active_verification(token, timestamp):
+        created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
             errors.setdefault("token", []).append("FIELD_TEXT")
@@ -16,22 +17,16 @@ class AccountActiveController:
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
-            user_data := await AccountActiveDatabase.get("by_token_email", token=token)
+            user_data := await AccountActiveDatabase.get(
+                "by_token_email", token=token, created_at=created_at
+            )
         ):
             return (
                 jsonify(
                     {
                         "errors": {"token": ["FIELD_INVALID"]},
-                        "message": "user not found",
+                        "message": "token invalid",
                     }
-                ),
-                404,
-            )
-        if user_data.expired_at <= timestamp.timestamp():
-            await AccountActiveDatabase.delete("by_token_email", token=token)
-            return (
-                jsonify(
-                    {"errors": {"token": ["NOT_FOUND"]}, "message": "token not found"}
                 ),
                 404,
             )
@@ -61,8 +56,8 @@ class AccountActiveController:
 
     @staticmethod
     async def user_account_active_verification(token, timestamp):
+        created_at = int(timestamp.timestamp())
         errors = {}
-        print(token)
         if not isinstance(token, str):
             errors.setdefault("token", []).append("FIELD_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
@@ -70,22 +65,16 @@ class AccountActiveController:
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
-            user_data := await AccountActiveDatabase.get("by_token_email", token=token)
+            user_data := await AccountActiveDatabase.get(
+                "by_token_email", token=token, created_at=created_at
+            )
         ):
             return (
                 jsonify(
                     {
                         "errors": {"token": ["FIELD_INVALID"]},
-                        "message": "user not found",
+                        "message": "token invalid",
                     }
-                ),
-                404,
-            )
-        if user_data.expired_at <= timestamp.timestamp():
-            await AccountActiveDatabase.delete("by_token_email", token=token)
-            return (
-                jsonify(
-                    {"errors": {"token": ["NOT_FOUND"]}, "message": "token not found"}
                 ),
                 404,
             )
@@ -123,6 +112,7 @@ class AccountActiveController:
 
     @staticmethod
     async def user_account_active_information(token, timestamp):
+        created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
             errors.setdefault("token", []).append("FIELD_TEXT")
@@ -131,22 +121,16 @@ class AccountActiveController:
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
-            user_data := await AccountActiveDatabase.get("by_token_web", token=token)
+            user_data := await AccountActiveDatabase.get(
+                "by_token_web", token=token, created_at=created_at
+            )
         ):
             return (
                 jsonify(
                     {
                         "errors": {"token": ["FIELD_INVALID"]},
-                        "message": "user not found",
+                        "message": "token invalid",
                     }
-                ),
-                404,
-            )
-        if user_data.expired_at <= timestamp.timestamp():
-            await AccountActiveDatabase.delete("by_token_web", token=token)
-            return (
-                jsonify(
-                    {"errors": {"token": ["NOT_FOUND"]}, "message": "token not found"}
                 ),
                 404,
             )
