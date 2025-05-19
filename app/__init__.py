@@ -14,7 +14,7 @@ from .database import db
 from .celery_app import celery_init_app
 from .mail import mail
 import datetime
-from .models import AccountActiveModel
+from .models import AccountActiveModel, ResetPasswordModel
 from celery.schedules import crontab
 
 
@@ -65,6 +65,10 @@ def create_app():
             for account_active_data in data_account_active:
                 if account_active_data.expired_at <= expired_at:
                     account_active_data.delete()
+        if data_reset_password := ResetPasswordModel.objects.all():
+            for reset_password_data in data_reset_password:
+                if reset_password_data.expired_at <= expired_at:
+                    reset_password_data.delete()
         return f"delete token at {int(datetime.datetime.now(datetime.timezone.utc).timestamp())}"
 
     celery_app.conf.beat_schedule = {
