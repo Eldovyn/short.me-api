@@ -5,7 +5,7 @@ from google.auth.transport import requests
 import requests
 import re
 from ..utils import TokenEmailAccountActive, TokenWebAccountActive, SendEmail, AuthJwt
-import datetime, traceback
+import datetime
 from ..config import provider as PROVIDER
 
 

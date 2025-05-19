@@ -1,6 +1,4 @@
-import authlib.integrations
-import authlib.integrations.base_client
-from flask import Flask, request, url_for, jsonify
+from flask import Flask, request
 import os
 from .config import (
     database_mongodb,
@@ -21,9 +19,6 @@ import datetime
 from .models import AccountActiveModel
 from celery.schedules import crontab
 from authlib.integrations.flask_client import OAuth
-import authlib
-from google.oauth2 import id_token
-from google.auth.transport import requests
 
 
 def create_app():

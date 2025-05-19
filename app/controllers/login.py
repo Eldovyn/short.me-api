@@ -6,7 +6,6 @@ import requests
 from ..utils import AuthJwt, TokenEmailAccountActive, TokenWebAccountActive, SendEmail
 import datetime
 from ..config import provider as PROVIDER
-import traceback
 
 
 class LoginController:
