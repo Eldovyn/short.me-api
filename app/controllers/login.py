@@ -1,4 +1,4 @@
-from ..databases import UserDatabase, AccountActiveDatabase
+from ..databases import UserDatabase, AccountActiveDatabase, BlacklistTokenDatabase
 from flask import jsonify
 from email_validator import validate_email
 from google.auth.transport import requests
@@ -9,6 +9,22 @@ from ..config import provider as PROVIDER
 
 
 class LoginController:
+    @staticmethod
+    async def user_logout(user, token):
+        if not (
+            user_token := await BlacklistTokenDatabase.insert(user.id, token["iat"])
+        ):
+            return (
+                jsonify(
+                    {
+                        "message": "invalid or expired token",
+                        "errors": {"token": ["IS_INVALID"]},
+                    }
+                ),
+                401,
+            )
+        return jsonify({"message": "successfully logout"}), 201
+
     @staticmethod
     async def user_login(provider, token, email, password, timestamp):
         from ..bcrypt import bcrypt
