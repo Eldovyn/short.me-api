@@ -97,11 +97,13 @@ def create_app():
         from .api.login import login_router
         from .api.account_active import account_active_router
         from .api.reset_password import reset_password_router
+        from .api.me import me_router
 
         app.register_blueprint(login_router)
         app.register_blueprint(register_router)
         app.register_blueprint(account_active_router)
         app.register_blueprint(reset_password_router)
+        app.register_blueprint(me_router)
 
     @app.after_request
     async def add_cors_headers(response):
