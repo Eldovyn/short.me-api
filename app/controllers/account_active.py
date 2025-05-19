@@ -11,9 +11,9 @@ class AccountActiveController:
         created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
-            errors.setdefault("token", []).append("FIELD_TEXT")
+            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
-            errors.setdefault("token", []).append("FIELD_REQUIRED")
+            errors.setdefault("token", []).append("IS_REQUIRED")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -24,7 +24,7 @@ class AccountActiveController:
             return (
                 jsonify(
                     {
-                        "errors": {"token": ["FIELD_INVALID"]},
+                        "errors": {"token": ["IS_INVALID"]},
                         "message": "token invalid",
                     }
                 ),
@@ -60,9 +60,9 @@ class AccountActiveController:
         created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
-            errors.setdefault("token", []).append("FIELD_TEXT")
+            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
-            errors.setdefault("token", []).append("FIELD_REQUIRED")
+            errors.setdefault("token", []).append("IS_REQUIRED")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         token_web = await TokenEmailAccountActive.get(token)
@@ -74,7 +74,7 @@ class AccountActiveController:
             return (
                 jsonify(
                     {
-                        "errors": {"token": ["FIELD_INVALID"]},
+                        "errors": {"token": ["IS_INVALID"]},
                         "message": "token invalid",
                     }
                 ),
@@ -116,9 +116,9 @@ class AccountActiveController:
         created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
-            errors.setdefault("token", []).append("FIELD_TEXT")
+            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
-            errors.setdefault("token", []).append("FIELD_REQUIRED")
+            errors.setdefault("token", []).append("IS_REQUIRED")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -129,7 +129,7 @@ class AccountActiveController:
             return (
                 jsonify(
                     {
-                        "errors": {"token": ["FIELD_INVALID"]},
+                        "errors": {"token": ["IS_INVALID"]},
                         "message": "token invalid",
                     }
                 ),
@@ -164,14 +164,14 @@ class AccountActiveController:
     async def send_account_active_email(email, timestamp):
         errors = {}
         if not isinstance(email, str):
-            errors.setdefault("email", []).append("FIELD_TEXT")
+            errors.setdefault("email", []).append("MUST_TEXT")
         if not email or (isinstance(email, str) and email.isspace()):
-            errors.setdefault("email", []).append("FIELD_REQUIRED")
+            errors.setdefault("email", []).append("IS_REQUIRED")
         try:
             valid = validate_email(email)
             email = valid.email
         except:
-            errors.setdefault("email", []).append("FIELD_INVALID")
+            errors.setdefault("email", []).append("IS_INVALID")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (user_data := await UserDatabase.get("by_email", email=email)):
@@ -195,7 +195,7 @@ class AccountActiveController:
             return (
                 jsonify(
                     {
-                        "errors": {"user": ["ACTIVE"]},
+                        "errors": {"user": ["IS_ACTIVE"]},
                         "message": "your account is active",
                     }
                 ),

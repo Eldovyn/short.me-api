@@ -20,11 +20,11 @@ class LoginController:
         try:
             errors = {}
             if not isinstance(provider, str):
-                errors.setdefault("provider", []).append("FIELD_TEXT")
+                errors.setdefault("provider", []).append("MUST_TEXT")
             if not provider or (isinstance(provider, str) and provider.isspace()):
-                errors.setdefault("provider", []).append("FIELD_REQUIRED")
+                errors.setdefault("provider", []).append("IS_REQUIRED")
             if provider not in PROVIDER.split(", "):
-                errors.setdefault("provider", []).append("FIELD_INVALID")
+                errors.setdefault("provider", []).append("IS_INVALID")
 
             if provider == "google":
                 if not errors:
@@ -69,18 +69,18 @@ class LoginController:
                     )
             else:
                 if not isinstance(email, str):
-                    errors.setdefault("email", []).append("FIELD_TEXT")
+                    errors.setdefault("email", []).append("MUST_TEXT")
                 if not email or (isinstance(email, str) and email.isspace()):
-                    errors.setdefault("email", []).append("FIELD_REQUIRED")
+                    errors.setdefault("email", []).append("IS_REQUIRED")
                 if not isinstance(password, str):
-                    errors.setdefault("password", []).append("FIELD_TEXT")
+                    errors.setdefault("password", []).append("MUST_TEXT")
                 if not password or (isinstance(password, str) and password.isspace()):
-                    errors.setdefault("password", []).append("FIELD_REQUIRED")
+                    errors.setdefault("password", []).append("IS_REQUIRED")
                 try:
                     valid = validate_email(email)
                     email = valid.email
                 except:
-                    errors.setdefault("email", []).append("FIELD_INVALID")
+                    errors.setdefault("email", []).append("IS_INVALID")
                 if errors:
                     return jsonify({"errors": errors, "message": "invalid data"}), 400
                 if not (user_data := await UserDatabase.get("by_email", email=email)):

@@ -12,9 +12,9 @@ class ResetPasswordController:
         created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
-            errors.setdefault("token", []).append("FIELD_TEXT")
+            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
-            errors.setdefault("token", []).append("FIELD_REQUIRED")
+            errors.setdefault("token", []).append("IS_REQUIRED")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -25,7 +25,7 @@ class ResetPasswordController:
             return (
                 jsonify(
                     {
-                        "errors": {"token": ["FIELD_INVALID"]},
+                        "errors": {"token": ["IS_INVALID"]},
                         "message": "user not found",
                     }
                 ),
@@ -64,21 +64,21 @@ class ResetPasswordController:
         created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
-            errors.setdefault("token", []).append("FIELD_TEXT")
+            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
-            errors.setdefault("token", []).append("FIELD_REQUIRED")
+            errors.setdefault("token", []).append("IS_REQUIRED")
         if not isinstance(new_password, str):
-            errors.setdefault("new_password", []).append("FIELD_TEXT")
+            errors.setdefault("new_password", []).append("MUST_TEXT")
         if not new_password or (
             isinstance(new_password, str) and new_password.isspace()
         ):
-            errors.setdefault("password", []).append("FIELD_REQUIRED")
+            errors.setdefault("password", []).append("IS_REQUIRED")
         if not isinstance(confirm_password, str):
-            errors.setdefault("confirm_password", []).append("FIELD_TEXT")
+            errors.setdefault("confirm_password", []).append("MUST_TEXT")
         if not confirm_password or (
             isinstance(confirm_password, str) and confirm_password.isspace()
         ):
-            errors.setdefault("confirm_password", []).append("FIELD_REQUIRED")
+            errors.setdefault("confirm_password", []).append("IS_REQUIRED")
         if new_password != confirm_password:
             errors.setdefault("password_match", []).append("PASSWORD_MISMATCH")
         if len(new_password) < 8:
@@ -104,7 +104,7 @@ class ResetPasswordController:
             return (
                 jsonify(
                     {
-                        "errors": {"token": ["FIELD_INVALID"]},
+                        "errors": {"token": ["IS_INVALID"]},
                         "message": "user not found",
                     }
                 ),
@@ -148,9 +148,9 @@ class ResetPasswordController:
         created_at = int(timestamp.timestamp())
         errors = {}
         if not isinstance(token, str):
-            errors.setdefault("token", []).append("FIELD_TEXT")
+            errors.setdefault("token", []).append("MUST_TEXT")
         if not token or (isinstance(token, str) and token.isspace()):
-            errors.setdefault("token", []).append("FIELD_REQUIRED")
+            errors.setdefault("token", []).append("IS_REQUIRED")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (
@@ -161,7 +161,7 @@ class ResetPasswordController:
             return (
                 jsonify(
                     {
-                        "errors": {"token": ["FIELD_INVALID"]},
+                        "errors": {"token": ["IS_INVALID"]},
                         "message": "user not found",
                     }
                 ),
@@ -196,14 +196,14 @@ class ResetPasswordController:
     async def send_reset_password_email(email, timestamp):
         errors = {}
         if not isinstance(email, str):
-            errors.setdefault("email", []).append("FIELD_TEXT")
+            errors.setdefault("email", []).append("MUST_TEXT")
         if not email or (isinstance(email, str) and email.isspace()):
-            errors.setdefault("email", []).append("FIELD_REQUIRED")
+            errors.setdefault("email", []).append("IS_REQUIRED")
         try:
             valid = validate_email(email)
             email = valid.email
         except:
-            errors.setdefault("email", []).append("FIELD_INVALID")
+            errors.setdefault("email", []).append("IS_INVALID")
         if errors:
             return jsonify({"errors": errors, "message": "invalid data"}), 400
         if not (user_data := await UserDatabase.get("by_email", email=email)):
