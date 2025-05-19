@@ -9,8 +9,6 @@ from .config import (
     smtp_password,
     celery_broker_url,
     celery_result_backend,
-    client_id_google,
-    client_secret_google,
 )
 from .database import db
 from .celery_app import celery_init_app
@@ -18,7 +16,6 @@ from .mail import mail
 import datetime
 from .models import AccountActiveModel
 from celery.schedules import crontab
-from authlib.integrations.flask_client import OAuth
 
 
 def create_app():
@@ -27,15 +24,6 @@ def create_app():
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     private_key_path = os.path.join(BASE_DIR, "keys", "private.pem")
     public_key_path = os.path.join(BASE_DIR, "keys", "public.pem")
-
-    oauth = OAuth(app)
-    google = oauth.register(
-        name="google",
-        client_id=client_id_google,
-        client_secret=client_secret_google,
-        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-        client_kwargs={"scope": "openid profile email"},
-    )
 
     global PRIVATE_KEY, PUBLIC_KEY
     with open(private_key_path, "rb") as f:
@@ -52,7 +40,6 @@ def create_app():
             task_ignore_result=True,
         ),
     )
-    app.secret_key = client_secret_google
     app.config["MONGODB_SETTINGS"] = {
         "db": database_mongodb,
         "host": database_mongodb_url,
