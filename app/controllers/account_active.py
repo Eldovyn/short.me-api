@@ -84,7 +84,6 @@ class AccountActiveController:
             "user_active_by_token_email",
             token=user_data.token_email,
             user_id=token_web["user_id"],
-            created_at=int(timestamp.timestamp()),
         )
         return (
             jsonify(

@@ -37,7 +37,6 @@ class ResetPasswordDatabase(Database):
                 if data_account_active.expired_at > int(created_at):
                     return data_account_active
                 else:
-                    data_account_active.user.updated_at = int(created_at)
                     data_account_active.user.save()
                     data_account_active.delete()
         if category == "by_token_email":
@@ -47,22 +46,21 @@ class ResetPasswordDatabase(Database):
                 if data_account_active.expired_at > int(created_at):
                     return data_account_active
                 else:
-                    data_account_active.user.updated_at = int(created_at)
                     data_account_active.user.save()
                     data_account_active.delete()
 
     @staticmethod
     async def delete(category, **kwargs):
         user_id = kwargs.get("user_id")
-        created_at = kwargs.get("created_at")
         new_password = kwargs.get("new_password")
+        created_at = kwargs.get("created_at")
         if category == "user_password_by_token_email":
             if user_data := UserModel.objects(id=user_id).first():
                 if data_account_active := ResetPasswordModel.objects(
                     user=user_data
                 ).first():
                     user_data.password = new_password
-                    user_data.updated_at = int(created_at)
+                    user_data.updated_at = created_at
                     user_data.save()
                     data_account_active.delete()
                     return data_account_active

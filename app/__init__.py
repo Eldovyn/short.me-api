@@ -14,7 +14,7 @@ from .database import db
 from .celery_app import celery_init_app
 from .mail import mail
 import datetime
-from .models import AccountActiveModel, ResetPasswordModel
+from .models import AccountActiveModel, ResetPasswordModel, OtpEmailModel
 from celery.schedules import crontab
 
 
@@ -69,6 +69,10 @@ def create_app():
             for reset_password_data in data_reset_password:
                 if reset_password_data.expired_at <= expired_at:
                     reset_password_data.delete()
+        if data_otp_email := OtpEmailModel.objects.all():
+            for otp_email_data in data_otp_email:
+                if otp_email_data.expired_at <= expired_at:
+                    otp_email_data.delete()
         return f"delete token at {int(datetime.datetime.now(datetime.timezone.utc).timestamp())}"
 
     celery_app.conf.beat_schedule = {
@@ -84,12 +88,16 @@ def create_app():
         from .api.account_active import account_active_router
         from .api.reset_password import reset_password_router
         from .api.me import me_router
+        from .api.profile import profile_router
+        from .api.otp import otp_router
 
         app.register_blueprint(login_router)
         app.register_blueprint(register_router)
         app.register_blueprint(account_active_router)
         app.register_blueprint(reset_password_router)
         app.register_blueprint(me_router)
+        app.register_blueprint(profile_router)
+        app.register_blueprint(otp_router)
 
     @app.after_request
     async def add_cors_headers(response):

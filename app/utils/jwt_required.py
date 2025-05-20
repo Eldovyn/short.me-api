@@ -22,7 +22,7 @@ def jwt_required():
         @wraps(f)
         def _verify_jwt():
             auth_header = request.headers.get("Authorization")
-
+            timestamp = request.timestamp
             if not auth_header:
                 return (
                     jsonify(
@@ -73,6 +73,17 @@ def jwt_required():
                 )
 
             if not (user_data := UserModel.objects(id=user_id).first()):
+                return (
+                    jsonify(
+                        {
+                            "message": "invalid or expired token",
+                            "errors": {"token": ["IS_INVALID"]},
+                        }
+                    ),
+                    401,
+                )
+
+            if not iat > user_data.updated_at:
                 return (
                     jsonify(
                         {
