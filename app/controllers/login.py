@@ -7,8 +7,7 @@ from flask import jsonify
 import requests
 from ..utils import (
     AuthJwt,
-    TokenEmailAccountActive,
-    TokenWebAccountActive,
+    TokenAccountActive,
     SendEmail,
     Validation,
     generate_otp,
@@ -135,17 +134,13 @@ class LoginController:
                     )
                 if not user_data.is_active:
                     expired_at = timestamp + datetime.timedelta(minutes=5)
-                    token_web = await TokenWebAccountActive.insert(
-                        f"{user_data.id}", int(timestamp.timestamp())
-                    )
-                    token_email = await TokenEmailAccountActive.insert(
-                        f"{user_data.id}", int(timestamp.timestamp())
+                    token = await TokenAccountActive.insert(
+                        f"{user_data.id}", timestamp
                     )
                     otp = generate_otp(4)
                     result_token = await AccountActiveDatabase.insert(
                         email,
-                        token_web,
-                        token_email,
+                        token,
                         otp,
                         expired_at,
                     )
@@ -164,7 +159,7 @@ class LoginController:
     <p>Someone has requested a link to verify your account, and you can do this through the link below.</p>
     <p>your otp is {otp}.</p>
     <p>
-        <a href="{web_short_me}/account-active?token={token_email}">
+        <a href="{web_short_me}/account-active?token={token}">
             Click here to activate your account
         </a>
     </p>
@@ -175,7 +170,7 @@ class LoginController:
                     )
                     user_me = self.user_seliazer.serialize(user_data)
                     token_data = self.token_serializer.serialize(
-                        result_token.account_active, token_email_is_null=True
+                        result_token, token_is_null=True
                     )
                     return (
                         jsonify(

@@ -1,16 +1,13 @@
 from ..databases import UserDatabase, AccountActiveDatabase
 from flask import jsonify, request, make_response
 from ..utils import (
-    TokenWebAccountActive,
-    TokenEmailAccountActive,
+    TokenAccountActive,
     SendEmail,
     Validation,
     generate_etag,
     generate_otp,
 )
 import datetime
-import string
-import random
 from ..serializers import UserSerializer, TokenSerializer
 from ..config import web_short_me
 
@@ -22,12 +19,12 @@ class AccountActiveController:
 
     async def get_user_account_active_verification(self, token, timestamp):
         errors = {}
-        await Validation.validate_token(errors, token, "email_token_account_active")
+        await Validation.validate_token(errors, token, "token_account_active")
         if errors:
             return jsonify({"errors": errors, "message": "validation errors"}), 400
         if not (
             user_token := await AccountActiveDatabase.get(
-                "by_token_email", token=token, created_at=timestamp
+                "by_token", token=token, created_at=timestamp
             )
         ):
             return (
@@ -61,12 +58,12 @@ class AccountActiveController:
 
     async def user_account_active_verification_re_send(self, token, timestamp):
         errors = {}
-        await Validation.validate_token(errors, token, "email_token_account_active")
+        await Validation.validate_token(errors, token, "token_account_active")
         if errors:
             return jsonify({"errors": errors, "message": "validation errors"}), 400
         if not (
             user_token := await AccountActiveDatabase.get(
-                "by_token_email", token=token, created_at=timestamp
+                "by_token", token=token, created_at=timestamp
             )
         ):
             errors.setdefault("token", []).append("IS_INVALID")
@@ -76,15 +73,12 @@ class AccountActiveController:
                 422,
             )
         expired_at = timestamp + datetime.timedelta(minutes=5)
-        token_web = await TokenWebAccountActive.insert(
-            f"{user_token.user.id}", int(timestamp.timestamp())
-        )
-        token_email = await TokenEmailAccountActive.insert(
-            f"{user_token.id}", int(timestamp.timestamp())
+        token_email = await TokenAccountActive.insert(
+            f"{user_token.id}", timestamp
         )
         otp = generate_otp(4)
         account_active_data = await AccountActiveDatabase.insert(
-            user_token.user.email, token_web, token_email, otp, expired_at
+            user_token.user.email, token_email, otp, expired_at
         )
         SendEmail.send_email(
             "Verification Your Account",
@@ -110,9 +104,9 @@ class AccountActiveController:
 </html>
                 """,
         )
-        user_me = self.user_seliazer.serialize(account_active_data.account_active.user)
+        user_me = self.user_seliazer.serialize(account_active_data.user)
         token_data = self.token_serializer.serialize(
-            account_active_data.account_active, token_email_is_null=True
+            account_active_data, token_is_null=True
         )
         return (
             jsonify(
@@ -127,31 +121,33 @@ class AccountActiveController:
 
     async def user_account_active_verification(self, token, otp, timestamp):
         errors = {}
-        await Validation.validate_token(errors, token, "email_token_account_active")
+        await Validation.validate_token(errors, token, "token_account_active")
         await Validation.validate_otp(errors, otp)
         if errors:
             return jsonify({"errors": errors, "message": "validation errors"}), 400
         if not (
             user_token := await AccountActiveDatabase.get(
-                "by_token_email", token=token, created_at=timestamp
+                "by_token", token=token, created_at=timestamp
             )
         ):
-            errors.setdefault("token", []).append("IS_INVALID")
-        if not (
-            user_token := await AccountActiveDatabase.get(
-                "by_token_email_otp", token=token, otp=otp, created_at=timestamp
-            )
-        ):
-            errors.setdefault("otp", []).append("IS_INVALID")
+            if "token" not in errors:
+                errors["token"] = ["IS_INVALID"]
+        try:
+            if user_token.otp != otp:
+                errors.setdefault("otp", []).append("IS_INVALID")
+        except:
+            if "token" not in errors:
+                errors["token"] = ["IS_INVALID"]
         if errors:
             return (
                 jsonify({"message": "validation errors", "errors": errors}),
                 422,
             )
-        await AccountActiveDatabase.delete(
-            "user_active_by_token_email",
-            token=user_token.token_email,
-            user_id=user_token.user.id,
+        await AccountActiveDatabase.update(
+            "user_active_by_token",
+            token=user_token.token,
+            user_id=f'{user_token.user.id}',
+            otp=user_token.otp,
         )
         current_user = self.user_seliazer.serialize(user_token.user)
         token_data = self.token_serializer.serialize(user_token)
@@ -165,48 +161,6 @@ class AccountActiveController:
             ),
             201,
         )
-
-    async def user_account_active_information(self, token, timestamp):
-        errors = {}
-        await Validation.validate_token(errors, token, "web_token_account_active")
-        await Validation.validate_required_text(errors, "token", token)
-        if errors:
-            return jsonify({"errors": errors, "message": "validation errors"}), 400
-        if not (
-            user_token := await AccountActiveDatabase.get(
-                "by_token_web", token=token, created_at=timestamp
-            )
-        ):
-            return (
-                jsonify(
-                    {
-                        "message": "validation errors",
-                        "errors": {"token": ["IS_INVALID"]},
-                    }
-                ),
-                422,
-            )
-        current_user = self.user_seliazer.serialize(user_token.user)
-        token_data = self.token_serializer.serialize(
-            user_token, token_email_is_null=True
-        )
-        combined_data = {**current_user, **token_data}
-        etag = generate_etag(combined_data)
-
-        client_etag = request.headers.get("If-None-Match")
-        if client_etag == etag:
-            return make_response("", 304)
-
-        response_data = {
-            "message": "successfully get account active information",
-            "data": token_data,
-            "user": current_user,
-        }
-
-        response = make_response(jsonify(response_data), 200)
-        response.headers["Content-Type"] = "application/json"
-        response.headers["ETag"] = etag
-        return response
 
     async def send_account_active_email(self, email, timestamp):
         errors = {}
@@ -238,15 +192,12 @@ class AccountActiveController:
                 409,
             )
         expired_at = timestamp + datetime.timedelta(minutes=5)
-        token_web = await TokenWebAccountActive.insert(
-            f"{user_data.id}", int(timestamp.timestamp())
-        )
-        token_email = await TokenEmailAccountActive.insert(
-            f"{user_data.id}", int(timestamp.timestamp())
+        token = await TokenAccountActive.insert(
+            f"{user_data.id}", timestamp
         )
         otp = generate_otp(4)
         account_active_data = await AccountActiveDatabase.insert(
-            email, token_web, token_email, otp, expired_at
+            email, token, otp, expired_at
         )
         SendEmail.send_email(
             "Verification Your Account",
@@ -263,7 +214,7 @@ class AccountActiveController:
     <p>Someone has requested a link to verify your account, and you can do this through the link below.</p>
     <p>your otp is {otp}.</p>
     <p>
-        <a href="{web_short_me}/account-active?token={token_email}">
+        <a href="{web_short_me}/account-active?token={token}">
             Click here to activate your account
         </a>
     </p>
@@ -272,9 +223,9 @@ class AccountActiveController:
 </html>
                 """,
         )
-        user_me = self.user_seliazer.serialize(account_active_data.account_active.user)
+        user_me = self.user_seliazer.serialize(account_active_data.user)
         token_data = self.token_serializer.serialize(
-            account_active_data.account_active, token_email_is_null=True
+            account_active_data, token_is_null=True
         )
         return (
             jsonify(

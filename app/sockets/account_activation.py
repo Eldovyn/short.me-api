@@ -23,11 +23,11 @@ def register_account_activation_socketio_events(socket_io: SocketIO):
                     room=room,
                     namespace="/account-activation",
                 )
-                if data_token := AccountActiveModel.objects(token_web=token).first():
+                if data_token := AccountActiveModel.objects(token=token).first():
                     data_token.delete()
                 socket_io.emit(
                     "expired",
-                    {"status": "expire"},
+                    {"status": "expire", 'message': 'your session expired'},
                     room=room,
                     namespace="/account-activation",
                 )
@@ -59,7 +59,7 @@ def register_account_activation_socketio_events(socket_io: SocketIO):
             disconnect()
             return
 
-        user_token = AccountActiveModel.objects(token_email=token).first()
+        user_token = AccountActiveModel.objects(token=token).first()
         if not user_token:
             disconnect()
             return

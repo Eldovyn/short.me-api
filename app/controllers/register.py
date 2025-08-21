@@ -2,8 +2,7 @@ from ..databases import UserDatabase, AccountActiveDatabase
 from flask import jsonify, url_for
 import requests
 from ..utils import (
-    TokenEmailAccountActive,
-    TokenWebAccountActive,
+    TokenAccountActive,
     SendEmail,
     AuthJwt,
     Validation,
@@ -36,7 +35,6 @@ class RegisterController:
         token_web = None
 
         try:
-            created_at = int(timestamp.timestamp())
             errors = {}
             await Validation.validate_provider(errors, provider)
             if provider == "google":
@@ -81,10 +79,10 @@ class RegisterController:
                 )
                 user_me = self.user_seliazer.serialize(user_data)
                 access_token = await AuthJwt.generate_jwt_async(
-                    f"{user_data.id}", created_at
+                    f"{user_data.id}", timestamp
                 )
                 access_token_model = AccessTokenSchema(
-                    access_token=access_token, created_at=created_at
+                    access_token=access_token, created_at=timestamp
                 )
                 token_data = self.token_serializer.serialize(access_token_model)
             else:
@@ -126,15 +124,12 @@ class RegisterController:
                 )
                 user_me = self.user_seliazer.serialize(user_data)
                 expired_at = timestamp + datetime.timedelta(minutes=5)
-                token_web = await TokenWebAccountActive.insert(
-                    f"{user_data.id}", int(timestamp.timestamp())
-                )
-                token_email = await TokenEmailAccountActive.insert(
-                    f"{user_data.id}", int(timestamp.timestamp())
+                token = await TokenAccountActive.insert(
+                    f"{user_data.id}", timestamp
                 )
                 otp = generate_otp(4)
                 token_account_active = await AccountActiveDatabase.insert(
-                    email, token_web, token_email, otp, expired_at
+                    email, token, otp, expired_at
                 )
                 SendEmail.send_email(
                     "Verification Your Account",
@@ -151,7 +146,7 @@ class RegisterController:
     <p>Someone has requested a link to verify your account, and you can do this through the link below.</p>
     <p>your otp is {otp}.</p>
     <p>
-        <a href="{web_short_me}/account-active?token={token_email}">
+        <a href="{web_short_me}/account-active?token={token}">
             Click here to activate your account
         </a>
     </p>
@@ -161,7 +156,7 @@ class RegisterController:
                 """,
                 )
                 token_data = self.token_serializer.serialize(
-                    token_account_active.account_active, token_email_is_null=True
+                    token_account_active, token_is_null=True
                 )
             return (
                 jsonify(

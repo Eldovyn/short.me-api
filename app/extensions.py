@@ -19,13 +19,13 @@ bcrypt = Bcrypt()
 limiter = Limiter(
     key_func=limiter_key,
     default_limits=["200 per day", "50 per hour"],
-    storage_uri=f"{celery_url}/1",
+    storage_uri=f"{celery_url}",
 )
 
 socket_io = SocketIO(
     cors_allowed_origins="*",
-    async_mode="threading",
-    message_queue=f"{celery_url}/1",
+    async_mode="eventlet",
+    message_queue=f"{celery_url}",
     max_http_buffer_size=100 * 1024 * 1024,
 )
 

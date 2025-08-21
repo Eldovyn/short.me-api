@@ -45,14 +45,6 @@ async def send_reset_password_email():
     return await reset_password_controller.send_reset_password_email(email, timestamp)
 
 
-@auth_router.get("/reset-password/status/<string:token>")
-async def user_reset_password_information(token):
-    timestamp = request.timestamp
-    return await reset_password_controller.user_reset_password_information(
-        token, timestamp
-    )
-
-
 @auth_router.get("/reset-password/password-changed/<string:token>")
 async def get_user_reset_password_verification(token):
     timestamp = request.timestamp
@@ -78,14 +70,6 @@ async def send_account_active_email():
     timestamp = request.timestamp
     email = data.get("email", "")
     return await account_active_controller.send_account_active_email(email, timestamp)
-
-
-@auth_router.get("/account-active/status/<string:token>")
-async def user_account_active_information(token):
-    timestamp = request.timestamp
-    return await account_active_controller.user_account_active_information(
-        token, timestamp
-    )
 
 
 @auth_router.get("/account-active/activation/<string:token>")

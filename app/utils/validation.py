@@ -2,10 +2,8 @@ from email_validator import validate_email
 import re
 from ..config import provider as PROVIDER
 from .token import (
-    TokenEmailAccountActive,
-    TokenWebAccountActive,
-    TokenEmailResetPassword,
-    TokenWebResetPassword,
+    TokenAccountActive,
+    TokenResetPassword,
 )
 
 
@@ -106,16 +104,10 @@ class Validation:
 
     @staticmethod
     async def validate_token(errors, token, category):
-        if category == "email_token_account_active":
-            if not (token_email := await TokenEmailAccountActive.get(token)):
+        if category == "token_account_active":
+            if not (token_account_active := await TokenAccountActive.get(token)):
                 errors.setdefault("token", []).append("IS_INVALID")
-        elif category == "web_token_account_active":
-            if not (token_web := await TokenWebAccountActive.get(token)):
-                errors.setdefault("token", []).append("IS_INVALID")
-        elif category == "email_token_reset_password":
-            if not (token_email := await TokenEmailResetPassword.get(token)):
-                errors.setdefault("token", []).append("IS_INVALID")
-        elif category == "web_token_reset_password":
-            if not (token_web := await TokenWebResetPassword.get(token)):
+        elif category == "token_reset_password":
+            if not (token_reset_password := await TokenResetPassword.get(token)):
                 errors.setdefault("token", []).append("IS_INVALID")
         return errors

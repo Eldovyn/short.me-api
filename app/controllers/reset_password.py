@@ -1,8 +1,7 @@
 from ..databases import UserDatabase, ResetPasswordDatabase
 from flask import jsonify, request, make_response
 from ..utils import (
-    TokenWebResetPassword,
-    TokenEmailResetPassword,
+    TokenAccountActive,
     SendEmail,
     Validation,
     generate_etag,
@@ -101,47 +100,6 @@ class ResetPasswordController:
             201,
         )
 
-    async def user_reset_password_information(self, token, timestamp):
-        errors = {}
-        await Validation.validate_token(errors, token, "web_token_reset_password")
-        if errors:
-            return jsonify({"errors": errors, "message": "validations error"}), 400
-        if not (
-            user_token := await ResetPasswordDatabase.get(
-                "by_token_web", token=token, created_at=timestamp
-            )
-        ):
-            return (
-                jsonify(
-                    {
-                        "message": "validation errors",
-                        "errors": {"token": ["IS_INVALID"]},
-                    }
-                ),
-                422,
-            )
-        current_user = self.user_seliazer.serialize(user_token.user)
-        token_data = self.token_serializer.serialize(
-            user_token, token_email_is_null=True
-        )
-        combined_data = {**current_user, **token_data}
-        etag = generate_etag(combined_data)
-
-        client_etag = request.headers.get("If-None-Match")
-        if client_etag == etag:
-            return make_response("", 304)
-
-        response_data = {
-            "message": "successfully get reset password information",
-            "data": token_data,
-            "user": current_user,
-        }
-
-        response = make_response(jsonify(response_data), 200)
-        response.headers["Content-Type"] = "application/json"
-        response.headers["ETag"] = etag
-        return response
-
     async def send_reset_password_email(self, email, timestamp):
         errors = {}
         await Validation.validate_required_text(errors, "email", email)
@@ -163,14 +121,11 @@ class ResetPasswordController:
                 422,
             )
         expired_at = timestamp + datetime.timedelta(minutes=5)
-        token_web = await TokenWebResetPassword.insert(
-            f"{user_data.id}", int(timestamp.timestamp())
-        )
-        token_email = await TokenEmailResetPassword.insert(
-            f"{user_data.id}", int(timestamp.timestamp())
+        token = await TokenAccountActive.insert(
+            f"{user_data.id}"
         )
         reset_password_data = await ResetPasswordDatabase.insert(
-            email, token_web, token_email, expired_at
+            email, token, expired_at
         )
         SendEmail.send_email(
             "Reset Password",
@@ -186,7 +141,7 @@ class ResetPasswordController:
     <p>Hello {user_data.username},</p>
     <p>Someone has requested a link to reser password, and you can do this through the link below.</p>
     <p>
-        <a href="{web_short_me}/reset-password/user?token={token_email}">
+        <a href="{web_short_me}/reset-password/user?token={token}">
             Click here to activate your account
         </a>
     </p>
